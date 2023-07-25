@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "The backend of the ToDo decentralized application",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "dev": "nodemon src/app.js"
+  },
+  "author": "Xander Palmer",
+  "license": "MIT",
+  "dependencies": {
+    "@spruceid/ssx-server": "^2.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mongoose": "^7.4.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
