@@ -1,5 +1,17 @@
 const mongoose = require("mongoose");
 
+/**
+ * @typedef {Object} TaskList
+ *
+ * @property {String} title The title of the list
+ *
+ * @property {String} owner The address of the user who created the list
+ *
+ * @property {Number} order The order of which the list appears compared to other lists
+ *
+ * @property {mongoose.Schema.Types.ObjectId} tasks The ids of all tasks that belong to the list
+ */
+
 const TaskListSchema = new mongoose.Schema(
   {
     title: {
