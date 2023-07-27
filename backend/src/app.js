@@ -2,9 +2,8 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const mongoose = require("mongoose");
-const Task = require("./model/Task");
 
-const { loggedIn, postmanLogin } = require("./lib/auth");
+const { loggedIn, postmanLogin, isNewUser } = require("./lib/auth");
 const { SSXServer, SSXExpressMiddleware } = require("@spruceid/ssx-server");
 
 const app = express();
@@ -35,12 +34,28 @@ const startServer = async () => {
     })
   );
 
-  app.use(SSXExpressMiddleware(ssx));
+  /**
+   * Enforces SSX authentication
+   *
+   * login endpoint
+   *  - endpoint: /ssx-login (default but required for callback)
+   *  - callback: Creates a new default task list if new address used
+   */
+  app.use(
+    SSXExpressMiddleware(ssx, {
+      login: {
+        path: "/ssx-login",
+        callback: (req) => {
+          isNewUser(req);
+        },
+      },
+    })
+  );
+
+  // Enforces a selected authentication function for all endpoints below this code
   app.use(authFunc);
 
   app.get("/", (req, res) => {
-    console.log(req.user.address);
-
     res.send("Hello World!");
   });
 
