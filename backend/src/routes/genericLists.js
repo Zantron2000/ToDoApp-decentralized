@@ -9,4 +9,11 @@ const router = express.Router();
  */
 router.get("/important", getImportantTasks);
 
+/**
+ * Api Route: /myDay
+ *
+ * Gets all tasks that are to be done today that belong to an address
+ */
+router.get("/myDay", getImportantTasks);
+
 module.exports = router;
