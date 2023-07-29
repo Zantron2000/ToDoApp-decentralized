@@ -21,6 +21,6 @@ router.get("/important", task.getImportantTasks);
  *
  * Gets all tasks that are to be done today that belong to an address
  */
-router.get("/myDay", task.getImportantTasks);
+router.get("/myDay", task.getMyDayTasks);
 
 module.exports = router;
