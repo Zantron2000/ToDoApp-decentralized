@@ -2,8 +2,7 @@ const mongoose = require("mongoose");
 const { describe, it, beforeAll, afterAll } = require("@jest/globals");
 require("dotenv").config();
 
-const Task = require("../../src/model/Task");
-const TaskList = require("../../src/model/TaskList");
+const { Task, Tasklist } = require("../../src/models/model");
 
 beforeAll(async () => {
   await mongoose.connect(process.env.DB_TEST_URL);
@@ -13,21 +12,21 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-describe("Tests the TaskList schema", () => {
+describe("Tests the Tasklist schema", () => {
   afterEach(async () => {
     await Task.deleteMany({});
-    await TaskList.deleteMany({});
+    await Tasklist.deleteMany({});
   });
 
-  it("Should create an empty TaskList with the bare minimum requirements", async () => {
-    const tasklist = new TaskList({
+  it("Should create an empty Tasklist with the bare minimum requirements", async () => {
+    const tasklist = new Tasklist({
       title: "test title",
       owner: "test owner",
       order: 1,
     });
     await tasklist.save();
 
-    const result = await TaskList.findOne({ title: "test title" }).lean();
+    const result = await Tasklist.findOne({ title: "test title" }).lean();
     const expectedResult = {
       title: "test title",
       owner: "test owner",
@@ -37,31 +36,33 @@ describe("Tests the TaskList schema", () => {
     expect(result).toMatchObject(expectedResult);
   });
 
-  it("Should throw an error due to order not being an integer", async () => {
+  it("Should be able to reference an existing task in it's array", async () => {
     const task1 = new Task({ title: "test task", owner: "test owner" });
     await task1.save();
 
-    const tasklist = new TaskList({
+    const tasklist = new Tasklist({
       title: "test title",
       owner: "test owner",
       order: 1,
-      tasks: [task1.id],
+      tasks: [task1._id],
     });
     await tasklist.save();
 
-    const results = await TaskList.findOne({ title: "test title" }).populate(
-      "tasks"
-    );
+    const before = await Task.find({}).lean();
+    const results = await Tasklist.findOne({ title: "test title" })
+      .populate("tasks")
+      .lean();
+    const after = await Task.find({}).lean();
 
     expect(results.tasks).toHaveLength(1);
     expect(results.tasks[0]).toMatchObject({
       title: "test task",
       owner: "test owner",
     });
-  });
+  }, 10000);
 
-  it("Should be able to reference an existing task in it's array", async () => {
-    const tasklist = new TaskList({
+  it("Should throw an error due to order not being an integer", async () => {
+    const tasklist = new Tasklist({
       title: "test title",
       owner: "test owner",
       order: 1.5,

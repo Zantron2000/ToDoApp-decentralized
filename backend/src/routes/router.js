@@ -1,10 +1,11 @@
 const express = require("express");
-const generics = require("./genericLists");
+
 const task = require("./tasks");
+const tasklist = require("./tasklist");
 
 const router = express.Router();
 
-router.use(generics);
 router.use("/task", task);
+router.use("/tasklist", tasklist);
 
 module.exports = router;

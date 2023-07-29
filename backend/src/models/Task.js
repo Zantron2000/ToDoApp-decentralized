@@ -129,6 +129,12 @@ const TaskSchema = new mongoose.Schema(
   }
 );
 
-const Task = mongoose.model("Task", TaskSchema);
+TaskSchema.methods.getPublicFields = function () {
+  const { _id, title, dueDate, important, myDay, done, owner, repeat, steps } =
+    this;
+  return { _id, title, dueDate, important, myDay, done, owner, repeat, steps };
+};
+
+const Task = mongoose.model("Task", TaskSchema, "tasks");
 
 module.exports = Task;
