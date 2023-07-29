@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const Task = require("./model/Task");
+const TaskListRoute = require("./routes/TaskList");
 
 const { SSXServer, SSXExpressMiddleware } = require("@spruceid/ssx-server");
 
@@ -13,7 +14,7 @@ const ssx = new SSXServer({
 });
 
 const startServer = async () => {
-  await mongoose.connect(process.env.DB_URL);
+  await mongoose.connect(process.env.DB_TEST_URL);
 
   app.use(
     cors({
@@ -23,6 +24,8 @@ const startServer = async () => {
   );
 
   app.use(SSXExpressMiddleware(ssx));
+
+  app.use("/TaskList", TaskListRoute);
 
   app.get("/", (req, res) => {
     console.log(req);
