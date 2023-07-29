@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const { validateSchema } = require("../lib/validate");
 const { Task } = require("../models/model");
 
@@ -29,6 +30,23 @@ const createTaskSchema = {
     },
   },
   required: ["title"],
+};
+
+/**
+ * @type {import("jsonschema").Schema}
+ */
+const finishTaskSchema = {
+  type: "object",
+  properties: {
+    taskId: {
+      type: "string",
+      minLength: 24,
+      maxLength: 24,
+      pattern: "^[0-9a-fA-F]{24}$",
+    },
+  },
+  required: ["taskId"],
+  additionalItems: false,
 };
 
 const createTask = async (req, res, next) => {
@@ -79,8 +97,46 @@ const getMyDayTasks = async (req, res) => {
   return res.status(200).json(tasks).send();
 };
 
+/**
+ * Marks a task as either finished or unfinished, depending on it's current state of
+ * being done. Identifies the task by the provided task id
+ *
+ * @param {import("express").Request} req The incoming API request
+ * @param {import("express").Response} res The outgoing API response
+ * @returns A response that indicates whether the task was marked as done or not
+ */
+const finishTask = async (req, res) => {
+  try {
+    const results = validateSchema(req.body, finishTaskSchema);
+
+    if (!results.errors.length) {
+      const { address: owner } = req.user;
+      const { taskId } = req.body;
+
+      const task = await Task.findOne({
+        owner,
+        _id: new mongoose.Types.ObjectId(taskId),
+      });
+
+      if (!task) {
+        return res.status(404).send();
+      }
+
+      task.done = !task.done;
+      await task.save();
+
+      return res.status(200).send();
+    } else {
+      return res.status(400).send();
+    }
+  } catch (err) {
+    return res.status(500).send();
+  }
+};
+
 module.exports = {
   createTask,
   getImportantTasks,
   getMyDayTasks,
+  finishTask,
 };
