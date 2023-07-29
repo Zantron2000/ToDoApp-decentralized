@@ -14,8 +14,8 @@ afterAll(async () => {
 
 describe("Tests the Tasklist schema", () => {
   afterEach(async () => {
-    // await Task.deleteMany({});
-    // await Tasklist.deleteMany({});
+    await Task.deleteMany({});
+    await Tasklist.deleteMany({});
   });
 
   it("Should create an empty Tasklist with the bare minimum requirements", async () => {
@@ -48,19 +48,18 @@ describe("Tests the Tasklist schema", () => {
     });
     await tasklist.save();
 
+    const before = await Task.find({}).lean();
     const results = await Tasklist.findOne({ title: "test title" })
-      .populate({
-        path: "tasks",
-        model: "Task",
-      })
-      .exec();
+      .populate("tasks")
+      .lean();
+    const after = await Task.find({}).lean();
 
     expect(results.tasks).toHaveLength(1);
     expect(results.tasks[0]).toMatchObject({
       title: "test task",
       owner: "test owner",
     });
-  });
+  }, 10000);
 
   it("Should throw an error due to order not being an integer", async () => {
     const tasklist = new Tasklist({

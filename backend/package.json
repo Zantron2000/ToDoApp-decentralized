@@ -4,7 +4,7 @@
   "description": "The backend of the ToDo decentralized application",
   "main": "index.js",
   "scripts": {
-    "test": "jest --config=test/jest.config.json",
+    "test": "jest --config=test/jest.config.json --runInBand",
     "dev": "nodemon src/app.js",
     "postman": "nodemon src/app.js auth=postman"
   },
