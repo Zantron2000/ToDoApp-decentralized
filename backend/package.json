@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --config=test/jest.config.json",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "postman": "nodemon src/app.js auth=postman"
   },
   "author": "Xander Palmer",
   "license": "MIT",
