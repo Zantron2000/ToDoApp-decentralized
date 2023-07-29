@@ -48,6 +48,11 @@ const TaskListSchema = new mongoose.Schema(
   }
 );
 
+TaskListSchema.methods.getPublicFields = function () {
+  const { _id, title, owner, order, tasks } = this;
+  return { _id, title, owner, order, tasks };
+};
+
 const TaskList = mongoose.model("TaskList", TaskListSchema);
 
 module.exports = TaskList;
