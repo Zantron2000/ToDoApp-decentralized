@@ -53,6 +53,6 @@ TaskListSchema.methods.getPublicFields = function () {
   return { _id, title, owner, order, tasks };
 };
 
-const TaskList = mongoose.model("TaskList", TaskListSchema);
+const TaskList = mongoose.model("TaskList", TaskListSchema, "tasklists");
 
 module.exports = TaskList;

@@ -38,6 +38,11 @@ const DefaultListSchema = new mongoose.Schema(
   }
 );
 
+DefaultListSchema.methods.getPublicFields = function () {
+  const { _id, title, owner, tasks } = this;
+  return { _id, title, owner, tasks };
+};
+
 const DefaultList = mongoose.model("DefaultList", DefaultListSchema);
 
 module.exports = DefaultList;

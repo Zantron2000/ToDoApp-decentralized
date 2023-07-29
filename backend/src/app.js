@@ -2,8 +2,6 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const mongoose = require("mongoose");
-const Task = require("./model/Task");
-const TaskListRoute = require("./routes/TaskList");
 
 const { loggedIn, postmanLogin, isNewUser } = require("./lib/auth");
 const { SSXServer, SSXExpressMiddleware } = require("@spruceid/ssx-server");

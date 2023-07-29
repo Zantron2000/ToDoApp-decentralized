@@ -1,4 +1,4 @@
-const DefaultList = require("../model/DefaultList");
+const { DefaultList } = require("../models/model");
 
 /**
  * Verifies that a user is logged in, with a valid SIWE session,

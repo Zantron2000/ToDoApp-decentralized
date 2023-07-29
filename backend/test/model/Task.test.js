@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { describe, it, beforeAll, afterAll } = require("@jest/globals");
 require("dotenv").config();
 
-const Task = require("../../src/model/Task");
+const Task = require("../../src/models/Task");
 
 beforeAll(async () => {
   await mongoose.connect(process.env.DB_TEST_URL);
