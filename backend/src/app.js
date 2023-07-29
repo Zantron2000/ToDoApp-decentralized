@@ -1,14 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-const mongoose = require("mongoose");
 
 const { loggedIn, postmanLogin, isNewUser } = require("./lib/auth");
 const { SSXServer, SSXExpressMiddleware } = require("@spruceid/ssx-server");
 const router = require("./routes/router");
 
 const app = express();
-const port = process.env.DB_PORT || 9000;
 const ssx = new SSXServer({
   signingKey: "key",
 });
@@ -25,9 +22,7 @@ if (authVar) {
   }
 }
 
-const startServer = async () => {
-  await mongoose.connect(process.env.DB_TEST_URL);
-
+const setupApp = async () => {
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Cookie");
     next();
@@ -67,9 +62,7 @@ const startServer = async () => {
     res.send("Hello World!");
   });
 
-  app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-  });
+  return app;
 };
 
-startServer();
+module.exports = { setupApp };

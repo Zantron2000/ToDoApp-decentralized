@@ -3,6 +3,6 @@ const router = express.Router();
 
 const { tasklist } = require("../controllers/controller");
 
-router.post("/post", tasklist.createTasklist);
+router.post("/", tasklist.createTasklist);
 
 module.exports = router;
