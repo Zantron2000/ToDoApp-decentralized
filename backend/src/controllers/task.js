@@ -39,7 +39,7 @@ const createTask = async (req, res, next) => {
     const task = new Task(req.body);
     await task.save();
 
-    return res.status(200).json(task).send();
+    return res.status(200).json(task.getPublicFields()).send();
   } else {
     return res.status(400).send("Invalid body");
   }
