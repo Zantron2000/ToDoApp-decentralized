@@ -23,4 +23,11 @@ router.get("/important", task.getImportantTasks);
  */
 router.get("/myDay", task.getMyDayTasks);
 
+/**
+ * Api Route: /task
+ *
+ * Updates a task with given information
+ */
+router.put("/", task.updateTask);
+
 module.exports = router;

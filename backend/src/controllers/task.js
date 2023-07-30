@@ -31,6 +31,73 @@ const createTaskSchema = {
   required: ["title"],
 };
 
+/**
+ * @type {import("jsonschema").Schema}
+ */
+const updateTaskSchema = {
+  type: "object",
+  properties: {
+    taskId: {
+      type: "string",
+      pattern: "^[0-9a-fA-F]{24}$",
+      minLength: 24,
+      maxLength: 24,
+    },
+    dueDate: {
+      type: "string",
+      format: "date",
+    },
+    title: {
+      type: "string",
+      minLength: 1,
+      pattern: "\\S",
+    },
+    important: {
+      type: "boolean",
+    },
+    myDay: {
+      type: "boolean",
+    },
+    repeat: {
+      type: "object",
+      properties: {
+        amount: {
+          type: "integer",
+          minimum: 1,
+        },
+        unit: {
+          type: "string",
+          enum: ["day", "week", "month"],
+        },
+      },
+      required: ["amount", "unit"],
+    },
+    steps: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          index: {
+            type: "integer",
+            minimum: 1,
+          },
+          complete: {
+            type: "boolean",
+          },
+          title: {
+            type: "string",
+            minLength: 1,
+            pattern: "\\S",
+          },
+        },
+        required: ["index", "complete", "title"],
+      },
+    },
+  },
+  required: ["taskId"],
+  additionalProperties: false,
+};
+
 const createTask = async (req, res, next) => {
   const results = validateSchema(req.body, createTaskSchema);
 
@@ -79,8 +146,42 @@ const getMyDayTasks = async (req, res) => {
   return res.status(200).json(tasks).send();
 };
 
+/**
+ * Updates a given task with new schema information
+ *
+ * @param {import("express").Request} req The incoming API request
+ * @param {import("express").Response} res The outgoing API response
+ * @returns A response with a status code to represent if the data was modified
+ */
+const updateTask = async (req, res) => {
+  try {
+    const results = validateSchema(req.body, updateTaskSchema);
+
+    if (!results.errors.length) {
+      const { _id, ...updates } = req.body;
+      const { address: owner } = req.user;
+
+      const task = await Task.findOneAndUpdate(
+        { _id, owner },
+        { updates }
+      ).lean();
+
+      if (task) {
+        return res.status(200).send();
+      } else {
+        return res.status(404).send();
+      }
+    } else {
+      return res.status(400).send();
+    }
+  } catch (err) {
+    return res.status(500).send();
+  }
+};
+
 module.exports = {
   createTask,
   getImportantTasks,
   getMyDayTasks,
+  updateTask,
 };
