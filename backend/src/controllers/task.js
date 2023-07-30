@@ -43,14 +43,14 @@ const updateTaskSchema = {
       minLength: 24,
       maxLength: 24,
     },
-    dueDate: {
-      type: "string",
-      format: "date",
-    },
     title: {
       type: "string",
       minLength: 1,
       pattern: "\\S",
+    },
+    dueDate: {
+      type: "string",
+      format: "date",
     },
     important: {
       type: "boolean",
@@ -58,28 +58,45 @@ const updateTaskSchema = {
     myDay: {
       type: "boolean",
     },
+    done: {
+      type: "boolean",
+    },
     repeat: {
       type: "object",
       properties: {
         amount: {
-          type: "integer",
+          type: "number",
           minimum: 1,
         },
         unit: {
           type: "string",
-          enum: ["day", "week", "month"],
+          enum: ["DAY", "WEEK", "MONTH"],
+        },
+        dueEvery: {
+          type: "object",
+          properties: {
+            amount: {
+              type: "number",
+              minimum: 1,
+            },
+            unit: {
+              type: "string",
+              enum: ["DAY", "WEEK", "MONTH"],
+            },
+          },
+          required: ["amount", "unit"],
         },
       },
-      required: ["amount", "unit"],
+      required: ["unit", "amount"],
     },
     steps: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          index: {
-            type: "integer",
-            minimum: 1,
+          order: {
+            type: "number",
+            minimum: 0,
           },
           complete: {
             type: "boolean",
@@ -90,7 +107,7 @@ const updateTaskSchema = {
             pattern: "\\S",
           },
         },
-        required: ["index", "complete", "title"],
+        required: ["order", "complete", "title"],
       },
     },
   },
@@ -158,12 +175,13 @@ const updateTask = async (req, res) => {
     const results = validateSchema(req.body, updateTaskSchema);
 
     if (!results.errors.length) {
-      const { _id, ...updates } = req.body;
+      const { taskId: _id, ...updates } = req.body;
       const { address: owner } = req.user;
 
       const task = await Task.findOneAndUpdate(
         { _id, owner },
-        { updates }
+        { $set: updates },
+        { new: true }
       ).lean();
 
       if (task) {

@@ -225,3 +225,59 @@ describe("Tests the get important tasks endpoint", () => {
     });
   });
 });
+
+describe("Tests the update task API route", () => {
+  afterEach(async () => {
+    await Task.deleteMany({});
+    await Tasklist.deleteMany({});
+  });
+
+  it("Should return status code 400 when request has no body", async () => {
+    const response = await request(app).put("/task");
+
+    expect(response.status).toBe(400);
+  });
+
+  it("Should return status code 400 when request has an invalid taskId", async () => {
+    const requestBody = { taskId: "hhhhaaaacccceeeeffffjjjj" };
+    const response = await request(app).put("/task").send(requestBody);
+
+    expect(response.status).toBe(400);
+  });
+
+  it("Should return status code 404 when request has a non-existent taskId", async () => {
+    const requestBody = { taskId: "111122223333444455556666" };
+    const response = await request(app).put("/task").send(requestBody);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("Should return status code 200 when request has a valid taskId", async () => {
+    const task = new Task({ owner: mockAddress, title: "Hi there" });
+    await task.save();
+
+    const requestBody = { taskId: task._id };
+    const response = await request(app).put("/task").send(requestBody);
+
+    expect(response.status).toBe(200);
+  });
+
+  it("Should update a found task with the given body", async () => {
+    const task = new Task({ owner: mockAddress, title: "Hi there" });
+    await task.save();
+
+    const requestBody = {
+      taskId: task._id,
+      important: true,
+      myDay: true,
+      done: true,
+    };
+    const response = await request(app).put("/task").send(requestBody);
+
+    const updatedTask = await Task.findById(task._id).lean();
+    expect(response.status).toBe(200);
+    expect(updatedTask.done).toBe(true);
+    expect(updatedTask.important).toBe(true);
+    expect(updatedTask.myDay).toBe(true);
+  });
+});
