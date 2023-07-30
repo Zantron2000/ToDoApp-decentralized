@@ -3,8 +3,9 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const { setupApp } = require("../../src/app");
-const { Task, Tasklist } = require("../../src/models/model");
+const { Task, Tasklist, DefaultList } = require("../../src/models/model");
 const { describe } = require("node:test");
+const TaskList = require("../../src/models/TaskList");
 
 const mockAddress = "0x1234";
 
@@ -33,9 +34,15 @@ describe("Tests the create task endpoint", () => {
   afterEach(async () => {
     await Task.deleteMany({});
     await Tasklist.deleteMany({});
+    await DefaultList.deleteMany({});
   });
 
-  it("Should create a task with the bare minimum requirements", async () => {
+  it("Should create a task with the bare minimum requirements and add it to the default tasklist", async () => {
+    await DefaultList.findOneAndUpdate(
+      { owner: mockAddress },
+      { owner: mockAddress, title: "hello" },
+      { upsert: true }
+    );
     const response = await request(app)
       .post("/task")
       .send({ title: "test title" });
@@ -53,6 +60,45 @@ describe("Tests the create task endpoint", () => {
     };
 
     expect(await Task.findOne({ owner: "0x1234" }).lean()).toBeDefined();
+    expect(
+      await DefaultList.findOne({
+        owner: mockAddress,
+        tasks: { $size: 1 },
+      }).lean()
+    ).toBeDefined();
+
+    expect(response.body).toEqual(expectedBody);
+  });
+
+  it("Should create a task with the bare minimum requirements and add it to a personal tasklist", async () => {
+    const list = await TaskList.findOneAndUpdate(
+      { owner: mockAddress },
+      { owner: mockAddress, title: "hello", order: 1 },
+      { upsert: true, new: true }
+    );
+    const response = await request(app)
+      .post("/task")
+      .send({ title: "test title", listId: list._id });
+
+    expect(response.status).toBe(200);
+
+    const expectedBody = {
+      title: "test title",
+      owner: "0x1234",
+      done: false,
+      important: false,
+      myDay: false,
+      steps: [],
+      _id: expect.any(String),
+    };
+
+    expect(await Task.findOne({ owner: "0x1234" }).lean()).toBeDefined();
+    expect(
+      await TaskList.findOne({
+        owner: mockAddress,
+        tasks: { $size: 1 },
+      }).lean()
+    ).toBeDefined();
 
     expect(response.body).toEqual(expectedBody);
   });

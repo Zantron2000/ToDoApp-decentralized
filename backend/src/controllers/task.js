@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
+
 const { validateSchema } = require("../lib/validate");
-const { Task } = require("../models/model");
+const { Task, Tasklist, DefaultList } = require("../models/model");
 
 /**
  * @type {import("jsonschema").Schema}
@@ -27,6 +29,12 @@ const createTaskSchema = {
       },
       required: ["amount", "unit"],
     },
+    listId: {
+      type: "string",
+      minLength: 24,
+      maxLength: 24,
+      pattern: "^[0-9a-fA-F]{24}$",
+    },
   },
   required: ["title"],
 };
@@ -35,9 +43,20 @@ const createTask = async (req, res, next) => {
   const results = validateSchema(req.body, createTaskSchema);
 
   if (!results.errors.length) {
-    req.body.owner = req.user.address;
-    const task = new Task(req.body);
+    const owner = req.user.address;
+    const { listId, ...schema } = req.body;
+    schema.owner = owner;
+    const task = new Task(schema);
     await task.save();
+
+    const listCollection = listId ? Tasklist : DefaultList;
+    const query = listId
+      ? { owner, _id: new mongoose.Types.ObjectId(listId) }
+      : { owner };
+
+    await listCollection.findOneAndUpdate(query, {
+      $push: { tasks: task._id },
+    });
 
     return res.status(200).json(task.getPublicFields()).send();
   } else {
