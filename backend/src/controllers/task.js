@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const { validateSchema } = require("../lib/validate");
+const { validateSchema, requireBodyValidation } = require("../lib/validate");
 const { Task, Tasklist, DefaultList } = require("../models/model");
 
 /**
@@ -39,29 +39,32 @@ const createTaskSchema = {
   required: ["title"],
 };
 
-const createTask = async (req, res, next) => {
-  const results = validateSchema(req.body, createTaskSchema);
+/**
+ * Creates a task with the given information, sets default values
+ * and then adds it to a tasklist
+ *
+ * @param {import("express").Request} req The incoming API request
+ * @param {import("express").Response} res The outgoing API response
+ * @returns A response that represents what happens and the created task
+ * body if successfully made
+ */
+const createTask = async (req, res) => {
+  const owner = req.user.address;
+  const { listId, ...schema } = req.body;
+  schema.owner = owner;
+  const task = new Task(schema);
+  await task.save();
 
-  if (!results.errors.length) {
-    const owner = req.user.address;
-    const { listId, ...schema } = req.body;
-    schema.owner = owner;
-    const task = new Task(schema);
-    await task.save();
+  const listCollection = listId ? Tasklist : DefaultList;
+  const query = listId
+    ? { owner, _id: new mongoose.Types.ObjectId(listId) }
+    : { owner };
 
-    const listCollection = listId ? Tasklist : DefaultList;
-    const query = listId
-      ? { owner, _id: new mongoose.Types.ObjectId(listId) }
-      : { owner };
+  await listCollection.findOneAndUpdate(query, {
+    $push: { tasks: task._id },
+  });
 
-    await listCollection.findOneAndUpdate(query, {
-      $push: { tasks: task._id },
-    });
-
-    return res.status(200).json(task.getPublicFields()).send();
-  } else {
-    return res.status(400).send("Invalid body");
-  }
+  return res.status(200).json(task.getPublicFields()).send();
 };
 
 /**
@@ -99,7 +102,7 @@ const getMyDayTasks = async (req, res) => {
 };
 
 module.exports = {
-  createTask,
+  createTask: requireBodyValidation(createTask, createTaskSchema),
   getImportantTasks,
   getMyDayTasks,
 };
