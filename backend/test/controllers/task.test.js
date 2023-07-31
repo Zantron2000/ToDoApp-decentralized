@@ -272,6 +272,56 @@ describe("Tests the get my day tasks endpoint", () => {
   });
 });
 
+describe("Tests the mark task endpoint", () => {
+  afterEach(async () => {
+    await Task.deleteMany({});
+    await Tasklist.deleteMany({});
+  });
+
+  it("should return status code 400 when request has no body", async () => {
+    const response = await request(app).put("/task/mark");
+
+    expect(response.status).toBe(400);
+  });
+
+  it("should return status code 400 when request has an invalid taskId (abc...xyz)", async () => {
+    const requestBody = { taskId: "abcdefghijklmnopqrstuvwx" };
+    const response = await request(app).put("/task/mark").send(requestBody);
+
+    expect(response.status).toBe(400);
+  });
+
+  it("should return status code 404 when request has a non-existent taskId (aaa...fff)", async () => {
+    const requestBody = { taskId: "aaaabbbbccccddddeeeeffff" };
+    const response = await request(app).put("/task/mark").send(requestBody);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("should return status code 200 and mark a task as done when request has a valid taskId", async () => {
+    const task = new Task({ owner: mockAddress, title: "hello" });
+    await task.save();
+
+    const requestBody = { taskId: task._id };
+    const response = await request(app).put("/task/mark").send(requestBody);
+
+    const updatedTask = await Task.findById(task._id).lean();
+    expect(response.status).toBe(200);
+    expect(updatedTask.done).toBe(true);
+  });
+
+  it("should return status code 200 and mark a task as not done when request has a valid taskId", async () => {
+    const task = new Task({ owner: mockAddress, title: "hello", done: true });
+    await task.save();
+
+    const requestBody = { taskId: task._id };
+    const response = await request(app).put("/task/mark").send(requestBody);
+
+    const updatedTask = await Task.findById(task._id).lean();
+    expect(response.status).toBe(200);
+    expect(updatedTask.done).toBe(false);
+  });
+});
 describe("Tests the delete task endpoint", () => {
   afterEach(async () => {
     await Task.deleteMany({});

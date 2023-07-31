@@ -24,7 +24,14 @@ router.get("/important", task.getImportantTasks);
 router.get("/myDay", task.getMyDayTasks);
 
 /**
- * Api Route /task
+ * Api Route: /task/mark
+ *
+ * Gets all tasks that are to be done today that belong to an address
+ */
+router.put("/mark", task.finishTask);
+
+/**
+ * Api Route: /task
  *
  * Deletes a task and it's reference in its tasklist
  */
