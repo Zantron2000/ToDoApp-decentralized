@@ -39,6 +39,21 @@ const createTaskSchema = {
   required: ["title"],
 };
 
+const deleteTaskSchema = {
+  type: "object",
+  properties: {
+    listId: {
+      type: "string",
+      minLength: 1,
+    },
+    taskId: {
+      type: "string",
+      minLength: 1,
+    },
+  },
+  required: ["taskId"],
+};
+
 /**
  * Creates a task with the given information, sets default values
  * and then adds it to a tasklist
@@ -101,8 +116,45 @@ const getMyDayTasks = async (req, res) => {
   return res.status(200).json(tasks).send();
 };
 
+const deleteTask = async (req, res, next) => {
+  try {
+    const results = validateSchema(req.body, deleteTaskSchema);
+
+    if (!results.errors.length) {
+      const { address: owner } = req.user;
+      const { listId, taskId } = req.body;
+
+      const collection = listId ? Tasklist : DefaultList;
+      const query = listId
+        ? { owner, _id: new mongoose.Types.ObjectId(listId) }
+        : { owner };
+
+      const task = await Task.findOneAndDelete({
+        owner,
+        _id: new mongoose.Types.ObjectId(taskId),
+      }).lean();
+      const list = await collection
+        .findOneAndUpdate(query, {
+          $pull: { tasks: new mongoose.Types.ObjectId(taskId) },
+        })
+        .lean();
+
+      if (task || list) {
+        return res.status(204).send();
+      } else {
+        return res.status(404).send();
+      }
+    } else {
+      return res.status(400).send("Invalid body");
+    }
+  } catch (err) {
+    return res.status(500).send("Server crashed");
+  }
+};
+
 module.exports = {
   createTask: requireBodyValidation(createTask, createTaskSchema),
   getImportantTasks,
   getMyDayTasks,
+  deleteTask,
 };
