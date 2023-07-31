@@ -24,6 +24,13 @@ router.get("/important", task.getImportantTasks);
 router.get("/myDay", task.getMyDayTasks);
 
 /**
+ * Api Route: /task
+ *
+ * Updates a task with given information
+ */
+router.put("/", task.updateTask);
+
+/**
  * Api Route: /task/mark
  *
  * Gets all tasks that are to be done today that belong to an address

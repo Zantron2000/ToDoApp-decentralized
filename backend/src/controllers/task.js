@@ -42,6 +42,87 @@ const createTaskSchema = {
 /**
  * @type {import("jsonschema").Schema}
  */
+const updateTaskSchema = {
+  type: "object",
+  properties: {
+    taskId: {
+      type: "string",
+      pattern: "^[0-9a-fA-F]{24}$",
+      minLength: 24,
+      maxLength: 24,
+    },
+    title: {
+      type: "string",
+      minLength: 1,
+      pattern: "\\S",
+    },
+    dueDate: {
+      type: "string",
+      format: "date",
+    },
+    important: {
+      type: "boolean",
+    },
+    myDay: {
+      type: "boolean",
+    },
+    done: {
+      type: "boolean",
+    },
+    repeat: {
+      type: "object",
+      properties: {
+        amount: {
+          type: "number",
+          minimum: 1,
+        },
+        unit: {
+          type: "string",
+          enum: ["DAY", "WEEK", "MONTH"],
+        },
+        dueEvery: {
+          type: "object",
+          properties: {
+            amount: {
+              type: "number",
+              minimum: 1,
+            },
+            unit: {
+              type: "string",
+              enum: ["DAY", "WEEK", "MONTH"],
+            },
+          },
+          required: ["amount", "unit"],
+        },
+      },
+      required: ["unit", "amount"],
+    },
+    steps: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          order: {
+            type: "number",
+            minimum: 0,
+          },
+          complete: {
+            type: "boolean",
+          },
+          title: {
+            type: "string",
+            minLength: 1,
+            pattern: "\\S",
+          },
+        },
+        required: ["order", "complete", "title"],
+      },
+    },
+  },
+  required: ["taskId"],
+  additionalProperties: false,
+};
+
 const finishTaskSchema = {
   type: "object",
   properties: {
@@ -137,6 +218,40 @@ const getMyDayTasks = async (req, res) => {
 };
 
 /**
+ * Updates a given task with new schema information
+ *
+ * @param {import("express").Request} req The incoming API request
+ * @param {import("express").Response} res The outgoing API response
+ * @returns A response with a status code to represent if the data was modified
+ */
+const updateTask = async (req, res) => {
+  try {
+    const results = validateSchema(req.body, updateTaskSchema);
+
+    if (!results.errors.length) {
+      const { taskId: _id, ...updates } = req.body;
+      const { address: owner } = req.user;
+
+      const task = await Task.findOneAndUpdate(
+        { _id, owner },
+        { $set: updates },
+        { new: true }
+      ).lean();
+
+      if (task) {
+        return res.status(200).send();
+      } else {
+        return res.status(404).send();
+      }
+    } else {
+      return res.status(400).send();
+    }
+  } catch (err) {
+    return res.status(500).send();
+  }
+};
+
+/**
  * Marks a task as either finished or unfinished, depending on it's current state of
  * being done. Identifies the task by the provided task id
  *
@@ -213,6 +328,7 @@ module.exports = {
   createTask: requireBodyValidation(createTask, createTaskSchema),
   getImportantTasks,
   getMyDayTasks,
+  updateTask,
   finishTask,
   deleteTask,
 };
