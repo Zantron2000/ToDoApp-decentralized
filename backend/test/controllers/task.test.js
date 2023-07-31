@@ -3,8 +3,9 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const { setupApp } = require("../../src/app");
-const { Task, Tasklist } = require("../../src/models/model");
+const { Task, Tasklist, DefaultList } = require("../../src/models/model");
 const { describe } = require("node:test");
+const TaskList = require("../../src/models/TaskList");
 
 const mockAddress = "0x1234";
 
@@ -33,9 +34,15 @@ describe("Tests the create task endpoint", () => {
   afterEach(async () => {
     await Task.deleteMany({});
     await Tasklist.deleteMany({});
+    await DefaultList.deleteMany({});
   });
 
-  it("Should create a task with the bare minimum requirements", async () => {
+  it("Should create a task with the bare minimum requirements and add it to the default tasklist", async () => {
+    await DefaultList.findOneAndUpdate(
+      { owner: mockAddress },
+      { owner: mockAddress, title: "hello" },
+      { upsert: true }
+    );
     const response = await request(app)
       .post("/task")
       .send({ title: "test title" });
@@ -53,6 +60,45 @@ describe("Tests the create task endpoint", () => {
     };
 
     expect(await Task.findOne({ owner: "0x1234" }).lean()).toBeDefined();
+    expect(
+      await DefaultList.findOne({
+        owner: mockAddress,
+        tasks: { $size: 1 },
+      }).lean()
+    ).toBeDefined();
+
+    expect(response.body).toEqual(expectedBody);
+  });
+
+  it("Should create a task with the bare minimum requirements and add it to a personal tasklist", async () => {
+    const list = await TaskList.findOneAndUpdate(
+      { owner: mockAddress },
+      { owner: mockAddress, title: "hello", order: 1 },
+      { upsert: true, new: true }
+    );
+    const response = await request(app)
+      .post("/task")
+      .send({ title: "test title", listId: list._id });
+
+    expect(response.status).toBe(200);
+
+    const expectedBody = {
+      title: "test title",
+      owner: "0x1234",
+      done: false,
+      important: false,
+      myDay: false,
+      steps: [],
+      _id: expect.any(String),
+    };
+
+    expect(await Task.findOne({ owner: "0x1234" }).lean()).toBeDefined();
+    expect(
+      await TaskList.findOne({
+        owner: mockAddress,
+        tasks: { $size: 1 },
+      }).lean()
+    ).toBeDefined();
 
     expect(response.body).toEqual(expectedBody);
   });
@@ -186,7 +232,7 @@ describe("Tests the get important tasks endpoint", () => {
   });
 });
 
-describe("Tests the get important tasks endpoint", () => {
+describe("Tests the get my day tasks endpoint", () => {
   afterEach(async () => {
     await Task.deleteMany({});
     await Tasklist.deleteMany({});
@@ -274,5 +320,104 @@ describe("Tests the mark task endpoint", () => {
     const updatedTask = await Task.findById(task._id).lean();
     expect(response.status).toBe(200);
     expect(updatedTask.done).toBe(false);
+  });
+});
+describe("Tests the delete task endpoint", () => {
+  afterEach(async () => {
+    await Task.deleteMany({});
+    await Tasklist.deleteMany({});
+  });
+
+  it("Should fail due to no task id being provided", async () => {
+    const response = await request(app).delete("/task").send({ listId: "id" });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("Should respond with a server error due to crashing query", async () => {
+    const response = await request(app).delete("/task").send({ taskId: "id" });
+
+    expect(response.status).toBe(500);
+  });
+
+  it("Should respond with a not found error after not finding the task", async () => {
+    const response = await request(app)
+      .delete("/task")
+      .send({ taskId: "aaaabbbbccccddddeeeeffff" });
+
+    expect(response.status).toBe(404);
+  });
+
+  it("Should delete a task from the database", async () => {
+    const task1 = new Task({ title: "title", owner: mockAddress });
+    await task1.save();
+
+    expect(await Task.findOne({ owner: mockAddress }).lean()).toBeDefined();
+
+    const response = await request(app)
+      .delete("/task")
+      .send({ taskId: task1._id });
+
+    expect(response.status).toBe(204);
+    expect(await Task.findOne({ owner: mockAddress }).lean()).toBeNull();
+  });
+
+  it("Should delete a task from it's tasklist", async () => {
+    const task1 = new Task({ title: "title", owner: mockAddress });
+    await task1.save();
+    const tasklist1 = new TaskList({
+      title: "tasks",
+      owner: mockAddress,
+      tasks: [task1._id],
+      order: 1,
+    });
+    await tasklist1.save();
+
+    expect(await Task.findOne({ owner: mockAddress }).lean()).toBeDefined();
+    expect(
+      await Tasklist.findOne({ owner: mockAddress, tasks: { $size: 1 } }).lean()
+    ).toBeDefined();
+
+    const response = await request(app)
+      .delete("/task")
+      .send({ taskId: task1._id });
+
+    expect(response.status).toBe(204);
+    expect(await Task.findOne({ owner: mockAddress }).lean()).toBeNull();
+    expect(
+      await Tasklist.findOne({ owner: mockAddress, tasks: { $size: 0 } }).lean()
+    ).toBeDefined();
+  });
+
+  it("Should delete a task from the default tasklist", async () => {
+    const task1 = new Task({ title: "title", owner: mockAddress });
+    await task1.save();
+    const tasklist1 = new DefaultList({
+      title: "tasks",
+      owner: mockAddress,
+      tasks: [task1._id],
+    });
+    await tasklist1.save();
+
+    expect(await Task.findOne({ owner: mockAddress }).lean()).toBeDefined();
+    expect(
+      await DefaultList.findOne({
+        owner: mockAddress,
+        tasks: { $size: 1 },
+      }).lean()
+    ).toBeDefined();
+
+    const response = await request(app)
+      .delete("/task")
+      .send({ taskId: task1._id });
+
+    expect(response.status).toBe(204);
+    expect(await Task.findOne({ owner: mockAddress }).lean()).toBeNull();
+    expect(
+      await DefaultList.findOne({
+        owner: mockAddress,
+        tasks: { $size: 0 },
+      }).lean()
+    ).toBeDefined();
   });
 });
