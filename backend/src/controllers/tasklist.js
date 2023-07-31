@@ -1,15 +1,34 @@
 const { Tasklist } = require("../models/model"); // schema of the product table
 const { validateSchema } = require("../lib/validate");
+const mongoose = require("mongoose");
 
 /**
  * @type {import("jsonschema").Schema}
  */
-const createTaskSchema = {
+const createTasklistSchema = {
   type: "object",
   properties: {
     title: { type: "string" },
   },
   required: ["title"],
+  additionalProperties: false,
+};
+
+/**
+ * @type {"import("jsonschema").Schema}
+ */
+const deleteTasklistSchema = {
+  type: "object",
+  properties: {
+    tasklistId: {
+      type: "String",
+      minLength: 24,
+      maxLength: 24,
+      pattern: "^[0-9a-fA-F]{24}$",
+    },
+  },
+  required: ["tasklistId"],
+
   additionalProperties: false,
 };
 
@@ -21,7 +40,7 @@ const createTaskSchema = {
  * @returns A response full of all the public fields from Tasklist
  */
 const createTasklist = async (req, res) => {
-  const results = validateSchema(req.body, createTaskSchema);
+  const results = validateSchema(req.body, createTasklistSchema);
 
   if (!results.errors.length) {
     const list = new Tasklist({
@@ -37,6 +56,42 @@ const createTasklist = async (req, res) => {
   }
 };
 
+/**
+ * Deletes a given Tasklist and all corresponding tasks
+ *
+ * @param {*} req The incoming API request
+ * @param {*} res The outgoing API response
+ * @returns The status code only if request was processed correctly, or the error and status if request failed
+ */
+const deleteTasklist = async (req, res) => {
+  try {
+    const results = validateSchema(req.body, deleteTasklistSchema); //checks to see if valid list
+
+    if (!results.errors.length) {
+      const id = new mongoose.Types.ObjectId(req.body.tasklistId);
+
+      if (
+        (await Tasklist.findOne({ owner: req.user.address }).lean()) == null
+      ) {
+        return res.status(400).send("tasklist not found");
+      }
+
+      await Tasklist.findByIdAndDelete({
+        _id: id,
+        owner: req.user.address,
+      }).lean();
+
+      return res.status(200).send();
+    } else {
+      return res.status(401).send("Invalid taskbody");
+    }
+  } catch (Error) {
+    console.log(Error);
+    return res.status(500).send();
+  }
+};
+
 module.exports = {
   createTasklist,
+  deleteTasklist,
 };
