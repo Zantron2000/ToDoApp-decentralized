@@ -9,7 +9,7 @@ const mongoose = require("mongoose");
  *
  * @property {Number} order The order of which the list appears compared to other lists
  *
- * @property {mongoose.Schema.Types.ObjectId} tasks The ids of all tasks that belong to the list
+ * @property {mongoose.Schema.Types.ObjectId[]} tasks The ids of all tasks that belong to the list
  */
 
 const TaskListSchema = new mongoose.Schema(
@@ -52,6 +52,26 @@ TaskListSchema.methods.getPublicFields = function () {
   const { _id, title, owner, order, tasks } = this;
   return { _id, title, owner, order, tasks };
 };
+
+/** 
+TaskListSchema.post(
+  "findOneAndDelete",
+  { query: true, document: true },
+  async function (tasklist) {
+    try {
+      console.log(tasklist.tasks.length);
+      for (let i = 0; i < tasklist.tasks.length; i++) {
+        await this.model("TaskList").findByIdAndDelete({
+          _id: tasks[i],
+          owner: this.owner,
+        });
+      }
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+*/
 
 const TaskList = mongoose.model("TaskList", TaskListSchema, "tasklists");
 

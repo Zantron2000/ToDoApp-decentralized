@@ -1,4 +1,4 @@
-const { Tasklist } = require("../models/model"); // schema of the product table
+const { Tasklist, Task } = require("../models/model"); // schema of the product table
 const { validateSchema } = require("../lib/validate");
 const mongoose = require("mongoose");
 
@@ -70,13 +70,22 @@ const deleteTasklist = async (req, res) => {
     if (!results.errors.length) {
       const id = new mongoose.Types.ObjectId(req.body.tasklistId);
 
-      if (
-        (await Tasklist.findOne({ owner: req.user.address }).lean()) == null
-      ) {
+      const list = await Tasklist.findOne({
+        _id: id,
+        owner: req.user.address,
+      });
+
+      if (list === null) {
         return res.status(400).send("tasklist not found");
       }
 
-      await Tasklist.findByIdAndDelete({
+      for (let i = 0; i < list.tasks.length; i++) {
+        await Task.findByIdAndDelete({
+          _id: list.tasks[i],
+          owner: req.user.address,
+        });
+      }
+      await Tasklist.findOneAndDelete({
         _id: id,
         owner: req.user.address,
       }).lean();

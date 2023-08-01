@@ -3,7 +3,7 @@ require("dotenv").config();
 const request = require("supertest");
 
 const { setupApp } = require("../../src/app");
-const { Tasklist } = require("../../src/models/model");
+const { Tasklist, Task } = require("../../src/models/model");
 
 const mockAddress = "0x1234";
 
@@ -100,6 +100,63 @@ describe("Testing list endpoint creation", () => {
         .send({ tasklistId: "grrr" });
 
       expect(removeResponse.status).toBe(401);
+    });
+    it("create a new task, delete the list, tasks should be deleted too", async () => {
+      const task1 = new Task({ title: "title", owner: mockAddress });
+      await task1.save();
+      const tasklist1 = new Tasklist({
+        title: "tasks",
+        owner: mockAddress,
+        tasks: [task1._id],
+        order: 1,
+      });
+      await tasklist1.save();
+
+      expect(await Task.findOne({ owner: mockAddress }).lean()).toBeDefined();
+      expect(
+        await Tasklist.findOne({
+          owner: mockAddress,
+          tasks: { $size: 1 },
+        }).lean()
+      ).toBeDefined();
+
+      const removeResponse = await request(app)
+        .delete("/tasklist/remove")
+        .send({ tasklistId: tasklist1._id.toString() });
+
+      expect(removeResponse.status).toBe(200);
+      expect(await Task.findOne({ owner: mockAddress }).lean()).toBeNull();
+      expect(await Tasklist.findOne({ owner: mockAddress }).lean()).toBeNull();
+    });
+
+    it("creates multiple new tasks, delete the list, all tasks should be deleted too", async () => {
+      const task1 = new Task({ title: "title1", owner: mockAddress });
+      const task2 = new Task({ title: "title2", owner: mockAddress });
+      await task1.save();
+      await task2.save();
+      const tasklist1 = new Tasklist({
+        title: "tasks",
+        owner: mockAddress,
+        tasks: [task1._id, task2._id],
+        order: 1,
+      });
+      await tasklist1.save();
+
+      expect(await Task.findOne({ owner: mockAddress }).lean()).toBeDefined();
+      expect(
+        await Tasklist.findOne({
+          owner: mockAddress,
+          tasks: { $size: 1 },
+        }).lean()
+      ).toBeDefined();
+
+      const removeResponse = await request(app)
+        .delete("/tasklist/remove")
+        .send({ tasklistId: tasklist1._id.toString() });
+
+      expect(removeResponse.status).toBe(200);
+      expect(await Task.findOne({ owner: mockAddress }).lean()).toBeNull();
+      expect(await Tasklist.findOne({ owner: mockAddress }).lean()).toBeNull();
     });
   });
 });
