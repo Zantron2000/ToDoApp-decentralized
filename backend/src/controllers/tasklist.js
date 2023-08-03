@@ -33,6 +33,15 @@ const deleteTasklistSchema = {
 };
 
 /**
+ * @type {"import("jsonschema").Schema"}
+ */
+const getAllTasklistsSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {},
+};
+
+/**
  * Creates a new Tasklist
  *
  * @param {import("express").Request} req The incoming API request
@@ -100,7 +109,28 @@ const deleteTasklist = async (req, res) => {
   }
 };
 
+const getAllTasklists = async (req, res) => {
+  try {
+    const results = validateSchema(req.body, getAllTasklistsSchema);
+
+    if (!results.errors.length) {
+      const allTasklists = await Tasklist.find(
+        { owner: req.user.address },
+        "title"
+      );
+
+      return res.status(200).json(allTasklists).send();
+    }
+
+    return res.status(400).send();
+  } catch (err) {
+    console.log(err);
+    return res.status(500);
+  }
+};
+
 module.exports = {
   createTasklist,
   deleteTasklist,
+  getAllTasklists,
 };

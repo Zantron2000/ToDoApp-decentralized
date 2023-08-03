@@ -53,26 +53,6 @@ TaskListSchema.methods.getPublicFields = function () {
   return { _id, title, owner, order, tasks };
 };
 
-/** 
-TaskListSchema.post(
-  "findOneAndDelete",
-  { query: true, document: true },
-  async function (tasklist) {
-    try {
-      console.log(tasklist.tasks.length);
-      for (let i = 0; i < tasklist.tasks.length; i++) {
-        await this.model("TaskList").findByIdAndDelete({
-          _id: tasks[i],
-          owner: this.owner,
-        });
-      }
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-*/
-
 const TaskList = mongoose.model("TaskList", TaskListSchema, "tasklists");
 
 module.exports = TaskList;
