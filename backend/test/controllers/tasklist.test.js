@@ -6,6 +6,7 @@ const { setupApp } = require("../../src/app");
 const { Tasklist, Task } = require("../../src/models/model");
 
 const mockAddress = "0x1234";
+const mockAddress2 = "0x4321";
 
 jest.mock("../../src/lib/auth", () => ({
   ...jest.requireActual("../../src/lib/auth"),
@@ -157,6 +158,92 @@ describe("Testing list endpoint creation", () => {
       expect(removeResponse.status).toBe(200);
       expect(await Task.findOne({ owner: mockAddress }).lean()).toBeNull();
       expect(await Tasklist.findOne({ owner: mockAddress }).lean()).toBeNull();
+    });
+  });
+
+  describe("Testing gett all instances of retreiving tasklists of a given owner", () => {
+    afterEach(async () => {
+      await Tasklist.deleteMany();
+    });
+
+    it("Should grab both tasklist's titles and return status 200", async () => {
+      const tasklist1 = new Tasklist({
+        title: "tasks1",
+        owner: mockAddress,
+        tasks: [],
+        order: 1,
+      });
+      await tasklist1.save();
+
+      const tasklist2 = new Tasklist({
+        title: "tasks2",
+        owner: mockAddress,
+        tasks: [],
+        order: 2,
+      });
+      await tasklist2.save();
+
+      const response = await request(app)
+        .get("/tasklist/allTasklists")
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(2);
+      response.body.forEach((tasklist) => {
+        expect(tasklist).toMatchObject({ title: expect.any(String) });
+      });
+    });
+
+    it("Should grab nothing due to no task lists, returns 200 still", async () => {
+      const response = await request(app)
+        .get("/tasklist/allTasklists")
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(0);
+    });
+
+    it("Fails due to invalid body request, returns 400 status", async () => {
+      const response = await request(app)
+        .get("/tasklist/allTasklists")
+        .send({ title: "test title" });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Should grab 2 out of 3 tasklist's titles and return status 200", async () => {
+      const tasklist1 = new Tasklist({
+        title: "tasks1",
+        owner: mockAddress,
+        tasks: [],
+        order: 1,
+      });
+
+      const tasklist2 = new Tasklist({
+        title: "tasks2",
+        owner: mockAddress,
+        tasks: [],
+        order: 2,
+      });
+
+      const tasklist3 = new Tasklist({
+        title: "tasks3",
+        owner: mockAddress2,
+        tasks: [],
+        order: 1,
+      });
+
+      await Promise.all([tasklist1.save(), tasklist2.save(), tasklist3.save()]);
+
+      const response = await request(app)
+        .get("/tasklist/allTasklists")
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(2);
+      response.body.forEach((tasklist) => {
+        expect(tasklist).toMatchObject({ title: expect.any(String) });
+      });
     });
   });
 });

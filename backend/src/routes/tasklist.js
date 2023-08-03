@@ -17,4 +17,11 @@ router.post("/", tasklist.createTasklist);
  */
 router.delete("/remove", tasklist.deleteTasklist);
 
+/**
+ * API route "tasklist/allTasklists"
+ *
+ * Gets the titles of all the tasklists of a given owner
+ */
+router.get("/allTasklists", tasklist.getAllTasklists);
+
 module.exports = router;
