@@ -159,4 +159,57 @@ describe("Testing list endpoint creation", () => {
       expect(await Tasklist.findOne({ owner: mockAddress }).lean()).toBeNull();
     });
   });
+
+  describe("Testing list endpoint updating title", () => {
+    afterEach(async () => {
+      await Tasklist.deleteMany();
+    });
+
+    it("Should return a 400 format error status code on each test", async () => {
+      const updateResponse1 = await request(app)
+        .put("/tasklist/title")
+        .send({ tasklistId: "SUU", newTitle: "test title" });
+      const updateResponse2 = await request(app)
+        .put("/tasklist/title")
+        .send({ newTitle: "test title" });
+      const updateResponse3 = await request(app)
+        .put("/tasklist/title")
+        .send({ tasklistId: "aaaabbbbccccddddeeeeffff" });
+
+      expect(updateResponse1.status).toBe(400);
+      expect(updateResponse2.status).toBe(400);
+      expect(updateResponse3.status).toBe(400);
+    });
+
+    it("Should send a 404 for no tasklist found to update", async () => {
+      const updateResponse = await request(app).put("/tasklist/title").send({
+        tasklistId: "aaaabbbbccccddddeeeeffff",
+        newTitle: "test title2",
+      });
+
+      expect(updateResponse.status).toBe(404);
+    });
+  });
+
+  it("Should update the tasklist title and return 200 status code", async () => {
+    const testlist = new Tasklist({
+      title: "tasks",
+      owner: mockAddress,
+      order: 1,
+    });
+
+    await testlist.save();
+
+    const updateResponse = await request(app).put("/tasklist/title").send({
+      tasklistId: testlist._id.toString(),
+      newTitle: "new Test title",
+    });
+
+    const testedList = await Tasklist.findOne({
+      title: "new Test title",
+    }).lean();
+
+    expect(testedList.title).toBe("new Test title");
+    expect(updateResponse.status).toBe(200);
+  });
 });

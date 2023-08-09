@@ -33,6 +33,26 @@ const deleteTasklistSchema = {
 };
 
 /**
+ * @type {"import("jsonschema").Schema}
+ */
+const updateTitleSchema = {
+  type: "object",
+  properties: {
+    tasklistId: {
+      type: "String",
+      maxLength: 24,
+      minLength: 24,
+      pattern: "^[0-9a-fA-F]{24}$",
+    },
+    newTitle: { type: "String" },
+  },
+
+  require: ["tasklistId", "newTitle"],
+  additionalProperties: false,
+  minProperties: 2,
+};
+
+/**
  * Creates a new Tasklist
  *
  * @param {import("express").Request} req The incoming API request
@@ -100,7 +120,40 @@ const deleteTasklist = async (req, res) => {
   }
 };
 
+/**
+ * Deletes a given Tasklist and all corresponding tasks
+ *
+ * @param {*} req The incoming API request
+ * @param {*} res The outgoing API response
+ * @returns The status code only if request was processed correctly, or the error and status if request failed
+ */
+const updateTasklistTitle = async (req, res) => {
+  try {
+    const results = validateSchema(req.body, updateTitleSchema);
+
+    if (!results.errors.length) {
+      const list = await Tasklist.findOneAndUpdate(
+        { _id: req.body.tasklistId, owner: req.user.address },
+        { title: req.body.newTitle },
+        { new: true }
+      ).lean();
+
+      if (list) {
+        res.status(200).send();
+      } else {
+        res.status(404).send();
+      }
+    } else {
+      return res.status(400).send();
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send();
+  }
+};
+
 module.exports = {
   createTasklist,
   deleteTasklist,
+  updateTasklistTitle,
 };
