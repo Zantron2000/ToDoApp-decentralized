@@ -64,6 +64,7 @@ describe("Testing list endpoint creation", () => {
   describe("Testing list endpoint deletion", () => {
     afterEach(async () => {
       await Tasklist.deleteMany();
+      await Task.deleteMany();
     });
 
     it("It should succeed in creating a list endpoint and deleting it", async () => {
@@ -158,5 +159,97 @@ describe("Testing list endpoint creation", () => {
       expect(await Task.findOne({ owner: mockAddress }).lean()).toBeNull();
       expect(await Tasklist.findOne({ owner: mockAddress }).lean()).toBeNull();
     });
+  });
+
+  describe("", () => {
+    afterEach(async () => {
+      await Tasklist.deleteMany();
+      await Task.deleteMany();
+    });
+
+    it("Sends an invalid body to the api call, should return status 401", async () => {
+      const response = await request(app)
+        .get("/tasklist/tasksInList")
+        .send({ tasklistId: "test id" });
+
+      expect(response.status).toBe(401);
+    });
+
+    it("Sends an invalid id to the api call, should return status 400", async () => {
+      const response = await request(app)
+        .get("/tasklist/tasksInList")
+        .send({ tasklistId: "aaaabbbbccccddddeeeeffff" });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Sends the title of the list and an empty array, returns status 200", async () => {
+      const tasklist1 = new Tasklist({
+        title: "tasks",
+        owner: mockAddress,
+        tasks: [],
+        order: 1,
+      });
+      await tasklist1.save();
+
+      const expectedBody = {
+        title: "tasks",
+        taskInfo: [],
+      };
+
+      const response = await request(app)
+        .get("/tasklist/tasksInList")
+        .send({ tasklistId: tasklist1._id.toString() });
+
+      expect(response.body).toEqual(expectedBody);
+      expect(response.status).toBe(200);
+    });
+
+    it("Sends the title of the list and an array with two task information, returns status 200", async () => {
+      const task1 = new Task({ title: "title1", owner: mockAddress });
+      const task2 = new Task({ title: "title2", owner: mockAddress });
+
+      await Promise.all([task1.save(), task2.save()]);
+
+      const tasklist1 = new Tasklist({
+        title: "tasks",
+        owner: mockAddress,
+        tasks: [task1._id, task2._id],
+        order: 1,
+      });
+
+      await tasklist1.save();
+
+      const expectedBody = {
+        title: "tasks",
+        taskInfo: [
+          {
+            title: "title1",
+            done: false,
+            important: false,
+            myDay: false,
+            owner: mockAddress,
+            steps: [],
+            _id: task1._id,
+          },
+          {
+            title: "title2",
+            done: false,
+            important: false,
+            myDay: false,
+            owner: mockAddress,
+            steps: [],
+            _id: task2._id,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .get("/tasklist/tasksInList")
+        .send({ tasklistId: tasklist1._id.toString() });
+
+      expect(response.body).toEqual(expectedBody);
+      expect(response.status).toBe(200);
+    }, 100000);
   });
 });

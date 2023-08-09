@@ -17,4 +17,11 @@ router.post("/", tasklist.createTasklist);
  */
 router.delete("/remove", tasklist.deleteTasklist);
 
+/**
+ * API route "/tasklist/tasksInList"
+ *
+ * Gets the info of all the tasks within a given list
+ */
+router.get("/tasksInList", tasklist.getTaskInfoInList);
+
 module.exports = router;
