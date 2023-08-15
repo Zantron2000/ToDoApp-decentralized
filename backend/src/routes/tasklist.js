@@ -17,4 +17,11 @@ router.post("/", tasklist.createTasklist);
  */
 router.delete("/remove", tasklist.deleteTasklist);
 
+/**
+ * API route "/tasklist/title"
+ *
+ * Updates the title of a given tasklist
+ */
+router.put("/title", tasklist.updateTasklistTitle);
+
 module.exports = router;
