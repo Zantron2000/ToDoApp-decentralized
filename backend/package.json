@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest --config=test/jest.config.json --runInBand",
     "dev": "nodemon src/server.js",
-    "postman": "nodemon src/server.js auth=postman"
+    "postman": "nodemon src/server.js auth=dummy"
   },
   "author": "Xander Palmer",
   "license": "MIT",
@@ -16,7 +16,8 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonschema": "^1.4.1",
-    "mongoose": "^7.4.1"
+    "mongoose": "^7.4.1",
+    "shelljs": "^0.8.5"
   },
   "devDependencies": {
     "@types/jest": "^29.5.3",

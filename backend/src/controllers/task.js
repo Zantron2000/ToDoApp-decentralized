@@ -289,39 +289,43 @@ const finishTask = async (req, res) => {
 };
 
 const deleteTask = async (req, res, next) => {
-  try {
-    const results = validateSchema(req.body, deleteTaskSchema);
+  // try {
+  //   const results = validateSchema(req.body, deleteTaskSchema);
+  //   if (!results.errors.length) {
+  //     const { address: owner } = req.user;
+  //     const { listId, taskId } = req.body;
+  //     const collection = listId ? Tasklist : DefaultList;
+  //     const query = listId
+  //       ? { owner, _id: new mongoose.Types.ObjectId(listId) }
+  //       : { owner };
+  //     const task = await Task.findOneAndDelete({
+  //       owner,
+  //       _id: new mongoose.Types.ObjectId(taskId),
+  //     }).lean();
+  //     const list = await collection
+  //       .findOneAndUpdate(query, {
+  //         $pull: { tasks: new mongoose.Types.ObjectId(taskId) },
+  //       })
+  //       .lean();
+  //     if (task || list) {
+  //       return res.status(204).send();
+  //     } else {
+  //       return res.status(404).send();
+  //     }
+  //   } else {
+  //     return res.status(400).send("Invalid body");
+  //   }
+  // } catch (err) {
+  //   return res.status(500).send("Server crashed");
+  // }
 
-    if (!results.errors.length) {
-      const { address: owner } = req.user;
-      const { listId, taskId } = req.body;
-
-      const collection = listId ? Tasklist : DefaultList;
-      const query = listId
-        ? { owner, _id: new mongoose.Types.ObjectId(listId) }
-        : { owner };
-
-      const task = await Task.findOneAndDelete({
-        owner,
-        _id: new mongoose.Types.ObjectId(taskId),
-      }).lean();
-      const list = await collection
-        .findOneAndUpdate(query, {
-          $pull: { tasks: new mongoose.Types.ObjectId(taskId) },
-        })
-        .lean();
-
-      if (task || list) {
-        return res.status(204).send();
-      } else {
-        return res.status(404).send();
-      }
-    } else {
-      return res.status(400).send("Invalid body");
-    }
-  } catch (err) {
-    return res.status(500).send("Server crashed");
-  }
+  // const shell = require("shelljs");
+  // shell.cd("app");
+  // console.log(shell.pwd());
+  // await shell.exec("npm run build", { async: true,  });
+  const shell = require("child_process");
+  shell.execSync("cd app && npm run build");
+  return res.status(200).send("All done!");
 };
 
 module.exports = {
